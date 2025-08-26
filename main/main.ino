@@ -6,7 +6,7 @@
 
 
 
-IPAddress remote_ip(192,168,1,14);  // IP do servidor para teste de ping
+IPAddress remote_ip(8,8,8,8);  // IP do servidor para teste de ping
 
 // Função para montar JSON e enviar
 void enviarMetricas(int rssi, float latencia, float perda_pct) {
