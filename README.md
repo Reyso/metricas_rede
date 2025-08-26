@@ -4,7 +4,7 @@ Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com 
 
 ## Como usar
 
-1. Configure `config.h` com seu Wi-Fi e IP do servidor.
+1. Crei e Configure `config.h` com seu Wi-Fi e IP do servidor.
 
 ```c++
 #ifndef CONFIG_H
