@@ -6,7 +6,7 @@ Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com 
 
 1. Configure `config.h` com seu Wi-Fi e IP do servidor.
 
-```
+```c++
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -16,7 +16,7 @@ const char* password = "SUA_SENHA";
 const char* serverName = "http://192.168.1.14:5000/metrics"; // IP do servidor Flask
 
 #endif
-``
+```
 
 
 2. Carregue `main.ino` no ESP32.
