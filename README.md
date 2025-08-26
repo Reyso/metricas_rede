@@ -1,0 +1,15 @@
+# Sistema de Monitoramento de Rede com ESP32
+
+Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com ESP32, envia para um servidor Flask e exibe em um dashboard Streamlit.
+
+## Como usar
+
+1. Configure `config.h` com seu Wi-Fi e IP do servidor.
+2. Carregue `main.ino` no ESP32.
+3. Rode o servidor Flask:
+   ```bash
+   python server.py  ```
+
+4. Rode o dashboard
+  ```streamlit run dashboard.py```
+

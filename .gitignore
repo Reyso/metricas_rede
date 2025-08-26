@@ -1,0 +1,10 @@
+# Configurações sensíveis
+config.h
+
+# Dados gerados
+dados_rede.csv
+
+# Ambiente Python
+__pycache__/
+*.pyc
+.env
