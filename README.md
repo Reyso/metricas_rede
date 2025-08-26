@@ -4,7 +4,13 @@ Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com 
 
 ## Como usar
 
-1. Crei e Configure `config.h` com seu Wi-Fi e IP do servidor.
+
+1. Instale as dependências
+ ```bash
+   pip install -r requirements.txt
+ ```
+
+3. Crei e Configure `config.h` com seu Wi-Fi e IP do servidor.
 
 ```c++
 #ifndef CONFIG_H
@@ -19,13 +25,13 @@ const char* serverName = "http://192.168.1.14:5000/metrics"; // IP do servidor F
 ```
 
 
-2. Carregue `main.ino` no ESP32.
-3. Rode o servidor Flask:
+3. Carregue `main.ino` no ESP32.
+4. Rode o servidor Flask:
    ```bash
    python server.py
    ```
 
-4. Rode o dashboard
+5. Rode o dashboard
   ```bash
   streamlit run dashboard.py
    ```
