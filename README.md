@@ -11,7 +11,7 @@ Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com 
    pip install -r requirements.txt
  ```
 
-3. Crei e Configure `config.h` com seu Wi-Fi e IP do servidor.
+3. Crei e Configure `config.h` com seu Wi-Fi e IP do servidor (no mesmo diretório do arquivo `main.ino` .
 
 ```c++
 #ifndef CONFIG_H
