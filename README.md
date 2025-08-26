@@ -25,5 +25,6 @@ const char* serverName = "http://192.168.1.14:5000/metrics"; // IP do servidor F
    python server.py  ```
 
 4. Rode o dashboard
-  ```streamlit run dashboard.py```
+  ```bash
+  streamlit run dashboard.py```
 
