@@ -4,6 +4,7 @@ Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com 
 
 ## Como usar
 
+0. Recomenda-se criar um ambiente virtual.
 
 1. Instale as dependências
  ```bash
