@@ -29,7 +29,7 @@ const char* serverName = "http://192.168.1.14:5000/metrics"; // IP do servidor F
 3. Carregue `main.ino` no ESP32.
 4. Rode o servidor Flask:
    ```bash
-   python server.py
+   python3 server.py
    ```
 
 5. Rode o dashboard
