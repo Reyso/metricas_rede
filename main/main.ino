@@ -1,43 +1,65 @@
 #include <WiFi.h>
 #include <ESP32Ping.h>
+#include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <HTTPClient.h>  // necessário para POST HTTP
-#include "config.h" // inclua credenciais separadas
+#include "config.h"
+#include <time.h>
+// Endereço do servidor Flask
 
 
+IPAddress remote_ip(192,168,1,14);
 
-IPAddress remote_ip(8,8,8,8);  // IP do servidor para teste de ping
 
-// Função para montar JSON e enviar
-void enviarMetricas(int rssi, float latencia, float perda_pct) {
-  StaticJsonDocument<200> doc;
+// NTP
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = -10800; // GMT-3
+const int daylightOffset_sec = 0;
+
+// Função para obter timestamp
+String getTimestamp() {
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    return "0000-00-00 00:00:00";
+  }
+  char buffer[20];
+  strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", &timeinfo);
+  return String(buffer);
+}
+
+// Função para montar e imprimir JSON
+void enviarMetricas(const String& ssid_nome, const String& bssid, int canal, const String& ip_local,
+                     int rssi, float latencia, float perda_pct, int enviados, int recebidos, float taxa_sucesso) {
+
+  String timestamp = getTimestamp();
+
+  StaticJsonDocument<400> doc;
+  doc["timestamp"] = timestamp;
+  doc["SSID"] = ssid_nome;
+  doc["BSSID"] = bssid;
+  doc["canal"] = canal;
+  doc["IP_local"] = ip_local;
   doc["RSSI"] = rssi;
   doc["latencia_ms"] = latencia;
   doc["perda_pct"] = perda_pct;
+  doc["pacotes_enviados"] = enviados;
+  doc["pacotes_recebidos"] = recebidos;
+  doc["taxa_sucesso_pct"] = taxa_sucesso;
 
-  String payload;
-  serializeJson(doc, payload);
+  String output;
+  serializeJson(doc, output);
+  Serial.println("JSON Gerado: " + output);
 
-  Serial.println("[DEBUG] JSON Gerado: " + payload);
-
-  if (WiFi.status() == WL_CONNECTED) {
+  // Aqui você pode enviar via HTTP POST para o Flask se quiser
+  
+  if(WiFi.status() == WL_CONNECTED){
     HTTPClient http;
     http.begin(serverName);
-    http.addHeader("Content-Type", "application/json");
-
-    int httpResponseCode = http.POST(payload);
-
-    if (httpResponseCode > 0) {
-      Serial.printf("[DEBUG] POST -> Código HTTP: %d\n", httpResponseCode);
-      String resposta = http.getString();
-      Serial.println("[DEBUG] Resposta servidor: " + resposta);
-    } else {
-      Serial.printf("[ERRO] Falha no POST. Código: %d\n", httpResponseCode);
-    }
+    http.addHeader("Content-Type","application/json");
+    int code = http.POST(output);
+    Serial.println("HTTP POST code: " + String(code));
     http.end();
-  } else {
-    Serial.println("[ERRO] Wi-Fi não está conectado no momento do POST.");
   }
+  
 }
 
 void setup() {
@@ -46,20 +68,30 @@ void setup() {
 
   Serial.println("Iniciando conexão Wi-Fi...");
   WiFi.begin(ssid, password);
-
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
+  Serial.println("\nWi-Fi conectado!");
+  Serial.print("Endereço IP: "); Serial.println(WiFi.localIP());
+  Serial.print("SSID Conectado: "); Serial.println(WiFi.SSID());
+  Serial.print("RSSI (força do sinal): "); Serial.println(WiFi.RSSI());
 
-  Serial.println("\nConectado ao Wi-Fi!");
-  Serial.print("Endereço IP ESP32: ");
-  Serial.println(WiFi.localIP());
+  // Configura NTP
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Serial.println("Sincronizando hora...");
+  struct tm timeinfo;
+  while(!getLocalTime(&timeinfo)){
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nHora sincronizada!");
 }
 
 void loop() {
   if (WiFi.status() == WL_CONNECTED) {
-    int pacotes = 5, recebidos = 0;
+    int pacotes = 10;
+    int recebidos = 0;
     float soma_latencia = 0;
 
     Serial.println("\n--- Testando conexão ---");
@@ -69,9 +101,9 @@ void loop() {
         recebidos++;
         float tempo = Ping.averageTime();
         soma_latencia += tempo;
-        Serial.printf("Ping %d: %.2f ms\n", i+1, tempo);
+        Serial.print("Ping "); Serial.print(i + 1); Serial.print(": "); Serial.print(tempo); Serial.println(" ms");
       } else {
-        Serial.printf("Ping %d: falhou\n", i+1);
+        Serial.print("Ping "); Serial.print(i + 1); Serial.println(": falhou");
       }
       delay(1000);
     }
@@ -80,16 +112,23 @@ void loop() {
     float perda_pct = (float)perdidos / pacotes * 100.0;
     float latencia_media = recebidos > 0 ? soma_latencia / recebidos : -1;
     int rssi = WiFi.RSSI();
+    float taxa_sucesso = recebidos > 0 ? ((float)recebidos / pacotes) * 100.0 : 0.0;
 
-    Serial.printf("Resumo -> Enviados: %d | Recebidos: %d | Perda: %.1f %% | Latência média: %.2f ms | RSSI: %d dBm\n",
-                  pacotes, recebidos, perda_pct, latencia_media, rssi);
+    Serial.print("Pacotes enviados: "); Serial.println(pacotes);
+    Serial.print("Pacotes recebidos: "); Serial.println(recebidos);
+    Serial.print("Perda de pacotes: "); Serial.print(perda_pct); Serial.println(" %");
+    Serial.print("Taxa de sucesso: "); Serial.print(taxa_sucesso); Serial.println(" %");
 
-    enviarMetricas(rssi, latencia_media, perda_pct);
+    // Envia métricas
+    enviarMetricas(WiFi.SSID(), WiFi.BSSIDstr(), WiFi.channel(), WiFi.localIP().toString(),
+                    rssi, latencia_media, perda_pct, pacotes, recebidos, taxa_sucesso);
 
+    // Debug: mostrando servidor
+    Serial.print("Enviando métricas para: "); Serial.println(serverName);
   } else {
-    Serial.println("[ERRO] Wi-Fi desconectado, tentando reconectar...");
+    Serial.println("Wi-Fi desconectado, tentando reconectar...");
     WiFi.reconnect();
   }
 
-  delay(10000);
+  delay(10000); // espera 10s antes do próximo teste
 }
