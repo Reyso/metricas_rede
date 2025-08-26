@@ -22,47 +22,58 @@ try:
                'pacotes_enviados','pacotes_recebidos','taxa_sucesso_pct']
     
     df = pd.read_csv(CSV_FILE, names=colunas, header=None, parse_dates=['timestamp'], dayfirst=False)
-    
+
     if df.empty:
         st.write("Nenhuma métrica disponível ainda.")
     else:
-        # Selectbox de rede (fixo, key única)
-        ssids = df['SSID'].unique()
-        ssid_selecionado = st.selectbox("Escolha a rede", ssids, key="rede_selectbox")
-        df_filtrado = df[df['SSID'] == ssid_selecionado].copy()
+        # Escolha automática da rede (pega a mais recente)
+        ssid_mais_recente = df.iloc[-1]['SSID']
+        df_filtrado = df[df['SSID'] == ssid_mais_recente].copy()
         
-        st.subheader("Últimas métricas")
+        st.subheader(f"Últimas métricas da rede: **{ssid_mais_recente}**")
 
         # Cards de indicadores
         col1, col2, col3 = st.columns(3)
-        col1.metric("RSSI Médio (dBm)", f"{df_filtrado['RSSI'].mean():.1f}",
-                    delta=None,
-                    delta_color="inverse" if df_filtrado['RSSI'].mean() < RSSI_FRACO else "normal")
-        col2.metric("Latência Média (ms)", f"{df_filtrado['latencia_ms'].mean():.1f}",
-                    delta=None,
-                    delta_color="inverse" if df_filtrado['latencia_ms'].mean() > LATENCIA_ALTA else "normal")
-        col3.metric("Perda Média (%)", f"{df_filtrado['perda_pct'].mean():.1f}",
-                    delta=None,
-                    delta_color="inverse" if df_filtrado['perda_pct'].mean() > PERDA_ALTA else "normal")
-
-        # Dataframe com últimas 10 métricas
-        st.dataframe(df_filtrado.tail(10))
-
-        # Gráfico de séries temporais
-        st.subheader("Gráficos com alertas")
-        df_plot = df_filtrado.set_index('timestamp')[['RSSI','latencia_ms','perda_pct']]
-        st.line_chart(df_plot)
+        col1.metric("RSSI Médio (dBm)", f"{df_filtrado['RSSI'].mean():.1f}")
+        col2.metric("Latência Média (ms)", f"{df_filtrado['latencia_ms'].mean():.1f}")
+        col3.metric("Perda Média (%)", f"{df_filtrado['perda_pct'].mean():.1f}")
 
         # Função de highlight das métricas
         def highlight(row):
-            styles = []
-            styles.append(f'background-color: {"red" if row.RSSI < RSSI_FRACO else "green"}')
-            styles.append(f'background-color: {"red" if row.latencia_ms > LATENCIA_ALTA else "green"}')
-            styles.append(f'background-color: {"red" if row.perda_pct > PERDA_ALTA else "green"}')
-            styles += [''] * (len(row)-3)  # mantém os outros campos sem cor
+            styles = [''] * len(row)
+            if row['RSSI'] < RSSI_FRACO:
+                styles[df_filtrado.columns.get_loc('RSSI')] = 'background-color: red'
+            if row['latencia_ms'] > LATENCIA_ALTA:
+                styles[df_filtrado.columns.get_loc('latencia_ms')] = 'background-color: red'
+            if row['perda_pct'] > PERDA_ALTA:
+                styles[df_filtrado.columns.get_loc('perda_pct')] = 'background-color: red'
             return styles
 
+        st.subheader("Últimas 10 medições")
         st.dataframe(df_filtrado.tail(10).style.apply(highlight, axis=1))
+
+        # Gráficos separados em grade 2x2
+        st.subheader("📊 Métricas individuais")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("RSSI (dBm) - Quanto mais próximo de 0, melhor o sinal.")
+            st.line_chart(df_filtrado.set_index('timestamp')['RSSI'], use_container_width=True,color = '#ffaa00')
+            
+        with col2:
+            st.subheader("Latência (ms) - Valores menores indicam melhor resposta da rede.")
+            st.line_chart(df_filtrado.set_index('timestamp')['latencia_ms'], use_container_width=True, color = '#7707a3')
+            
+
+        col3, col4 = st.columns(2)
+        with col3:
+            st.subheader("Perda de Pacotes (%) - Ideal é ficar em 0%.")
+            st.line_chart(df_filtrado.set_index('timestamp')['perda_pct'], use_container_width=True, color = '#f22718')
+            
+        with col4:
+            st.subheader("Taxa de Sucesso (%) - Mostra confiabilidade da transmissão.")
+            st.line_chart(df_filtrado.set_index('timestamp')['taxa_sucesso_pct'], use_container_width=True, color = '#16a81d')
+            
 
 except Exception as e:
     st.write("Erro ao carregar dados: " + str(e))
