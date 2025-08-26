@@ -20,7 +20,7 @@ Este projeto coleta métricas de Wi-Fi (RSSI, latência e perda de pacotes) com 
 const char* ssid = "SEU_WIFI";
 const char* password = "SUA_SENHA";
 
-const char* serverName = "http://192.168.1.14:5000/metrics"; // IP do servidor Flask
+const char* serverName = "http://192.168.x.xx:5000/metrics"; // IP do servidor Flask
 
 #endif
 ```
